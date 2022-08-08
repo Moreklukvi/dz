@@ -1,0 +1,1651 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Moreklukvi/dz/blob/main/dz2\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/da-python/python-for-data-analytics/blob/main/Lesson2/hometask/HH-api-hometask.ipynb)"
+      ],
+      "metadata": {
+        "collapsed": false,
+        "pycharm": {
+          "name": "#%% md\n"
+        },
+        "id": "lF0qnV6Xxddz"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Задание\n",
+        "* Скачать все вакансии СБЕРа с ХХ (у апи есть ограничение в 2000, а также captcha подумайте как их можно обойти)\n",
+        "* Извлеките все описания этих вакансий\n",
+        "* Создайте DataFrame  добавьте поле skills\n",
+        "* Переведите даты публикаций в datetime\n",
+        "* Постройте график опубликованных вакансий по датам\n",
+        "* Переведите даты в дни недели, и определите день недели, в который больше всего публикуют вакансий\n",
+        "* Найдите те вакансии с использованием python, которые вам интересны\n",
+        "* Определите по полю skills какие навыки больше всего востребованы для этих вакансий\n",
+        "* Постройте график наиболее востребованных навыков для аналитика данных"
+      ],
+      "metadata": {
+        "collapsed": false,
+        "pycharm": {
+          "name": "#%% md\n"
+        },
+        "id": "08jQqwB1xdd3"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "https://github.com/hhru/api"
+      ],
+      "metadata": {
+        "collapsed": false,
+        "pycharm": {
+          "name": "#%% md\n"
+        },
+        "id": "5atdqZEMxdd3"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "outputs": [],
+      "source": [
+        "import requests\n",
+        "from tqdm.auto import tqdm\n",
+        "import pandas as pd"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "eGnYxJ9hxdd4"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "outputs": [],
+      "source": [
+        "sber = '3529'\n",
+        "page = 1\n",
+        "num_per_page = 100\n",
+        "moscow = 1\n",
+        "url = f'https://api.hh.ru/vacancies?employer_id={sber}&page={page}&per_page={num_per_page}&area={moscow}'"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "xEneemIMxdd5"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 5,
+      "outputs": [],
+      "source": [
+        "url = f'https://api.hh.ru/vacancies'\n",
+        "params = {\n",
+        "    'employer_id':sber,\n",
+        "    'page':page,\n",
+        "    'per_page':num_per_page,\n",
+        "    'area':moscow,\n",
+        "}\n",
+        "res = requests.get(url, params=params)"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "UMYg8RsCxdd5"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "outputs": [],
+      "source": [
+        "res = requests.get(url)"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "dwOfZ3DMxdd6"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 7,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "100"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 7
+        }
+      ],
+      "source": [
+        "\n",
+        "vacancies = res.json()\n",
+        "num_pages = vacancies.get('pages')\n",
+        "num_pages"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "6Bu9exbRxdd8",
+        "outputId": "4a5d4fb4-0b5c-4f2d-ba78-09dfb5a2ae41"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "dict_keys(['items', 'found', 'pages', 'per_page', 'page', 'clusters', 'arguments', 'alternate_url'])"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 8
+        }
+      ],
+      "source": [
+        "vacancies.keys()"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "wLGzyhA8xdd8",
+        "outputId": "84835c3a-98c5-4345-f209-57671dfcaafb"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 9,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "{'accept_temporary': False,\n",
+              " 'address': None,\n",
+              " 'adv_response_url': 'https://api.hh.ru/vacancies/68324477/adv_response?host=hh.ru',\n",
+              " 'alternate_url': 'https://hh.ru/vacancy/68324477',\n",
+              " 'apply_alternate_url': 'https://hh.ru/applicant/vacancy_response?vacancyId=68324477',\n",
+              " 'archived': False,\n",
+              " 'area': {'id': '1', 'name': 'Москва', 'url': 'https://api.hh.ru/areas/1'},\n",
+              " 'contacts': None,\n",
+              " 'created_at': '2022-08-01T09:34:36+0300',\n",
+              " 'department': None,\n",
+              " 'employer': {'alternate_url': 'https://hh.ru/employer/2489728',\n",
+              "  'id': '2489728',\n",
+              "  'logo_urls': {'240': 'https://hhcdn.ru/employer-logo/3424738.jpeg',\n",
+              "   '90': 'https://hhcdn.ru/employer-logo/3424737.jpeg',\n",
+              "   'original': 'https://hhcdn.ru/employer-logo-original/745944.jpg'},\n",
+              "  'name': 'Банкирро',\n",
+              "  'trusted': True,\n",
+              "  'url': 'https://api.hh.ru/employers/2489728',\n",
+              "  'vacancies_url': 'https://api.hh.ru/vacancies?employer_id=2489728'},\n",
+              " 'has_test': False,\n",
+              " 'id': '68324477',\n",
+              " 'insider_interview': None,\n",
+              " 'name': 'Менеджер по продажам услуг',\n",
+              " 'premium': False,\n",
+              " 'published_at': '2022-08-01T09:34:36+0300',\n",
+              " 'relations': [],\n",
+              " 'response_letter_required': False,\n",
+              " 'response_url': None,\n",
+              " 'salary': {'currency': 'RUR', 'from': None, 'gross': False, 'to': 350000},\n",
+              " 'schedule': {'id': 'fullDay', 'name': 'Полный день'},\n",
+              " 'snippet': {'requirement': 'Имеешь опыт проведения презентаций, закрытия возражений и урегулирования конфликтов.',\n",
+              "  'responsibility': 'Никакого поиска клиентов и холодного обзвона, работаем на входящем потоке, непрерывный поток клиентов.'},\n",
+              " 'sort_point_distance': None,\n",
+              " 'type': {'id': 'open', 'name': 'Открытая'},\n",
+              " 'url': 'https://api.hh.ru/vacancies/68324477?host=hh.ru',\n",
+              " 'working_days': [],\n",
+              " 'working_time_intervals': [],\n",
+              " 'working_time_modes': []}"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 9
+        }
+      ],
+      "source": [
+        "vacancies.get('items')[0]"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Kaq0e0MCxdd8",
+        "outputId": "5c85bd61-59e2-4a39-98a7-3bc1105c7be9"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 10,
+      "outputs": [],
+      "source": [
+        "v = vacancies.get('items')"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "X6Xqniagxdd8"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 11,
+      "outputs": [],
+      "source": [
+        "vacancies = res.json()\n",
+        "num_pages = vacancies.get('pages')\n",
+        "vacancy_ids = [el.get('id') for el in vacancies.get('items')]"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "q1xmFMuYxdd9"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 12,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "dict_keys(['items', 'found', 'pages', 'per_page', 'page', 'clusters', 'arguments', 'alternate_url'])"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 12
+        }
+      ],
+      "source": [
+        "vacancies.keys()"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "qI_zGZV-xdd9",
+        "outputId": "30a18173-8382-49b5-a4e6-6956d71cc5c2"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 13,
+      "outputs": [],
+      "source": [
+        "vnum  = vacancies.get('pages')"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "smBuSDPIxdd-"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "all_vacancy_ids= []\n",
+        "for i in tqdm(range(vnum)):\n",
+        "    url = f'https://api.hh.ru/vacancies?employer_id={sber}&page={i}&per_page={num_per_page}&area={moscow}'\n",
+        "    res = requests.get(url)\n",
+        "    vacancies = res.json()\n",
+        "    vacancy_ids = [el.get('id') for el in vacancies.get('items')]\n",
+        "    all_vacancy_ids.extend(vacancy_ids)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 259,
+          "referenced_widgets": [
+            "f8bd09dd54324eabbd1998d473de8b45",
+            "e16fccf738a544e587c79a59089d9382",
+            "009e129e0de9414abb64737582cad721",
+            "344d1463d5714202954295ab97e18e65",
+            "b3d6eca338c24d1d8993752a693b1691",
+            "ce482a3642e34480b7fc5079493f68e8",
+            "af3ef48e3ae9439ea82cc0ed245a8559",
+            "27f18ab521c345f89f99c9853dcde721",
+            "db14d38926b249deba022317527393fc",
+            "5f94b627e3c54a8ebd09de0c219c3f2b",
+            "560e3c5513df43d08d5408267334a5c8"
+          ]
+        },
+        "id": "uS9IDOmjnFCi",
+        "outputId": "3280007e-7186-4f04-bd69-0dae6f484f9b"
+      },
+      "execution_count": 16,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "  0%|          | 0/100 [00:00<?, ?it/s]"
+            ],
+            "application/vnd.jupyter.widget-view+json": {
+              "version_major": 2,
+              "version_minor": 0,
+              "model_id": "f8bd09dd54324eabbd1998d473de8b45"
+            }
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "error",
+          "ename": "TypeError",
+          "evalue": "ignored",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mTypeError\u001b[0m                                 Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-16-bc6e4c65136e>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[1;32m      4\u001b[0m     \u001b[0mres\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mrequests\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0murl\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      5\u001b[0m     \u001b[0mvacancies\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mres\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mjson\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m----> 6\u001b[0;31m     \u001b[0mvacancy_ids\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0mel\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m'id'\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfor\u001b[0m \u001b[0mel\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mvacancies\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m'items'\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m      7\u001b[0m     \u001b[0mall_vacancy_ids\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mextend\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mvacancy_ids\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;31mTypeError\u001b[0m: 'NoneType' object is not iterable"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 17,
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "4WqNx509xdd-",
+        "outputId": "de402f48-6730-4903-a7a2-defefae251df"
+      },
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "1156"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 17
+        }
+      ],
+      "source": [
+        "len(all_vacancy_ids)\n",
+        "# https://api.hh.ru/vacancies/66634517"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 18,
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 49,
+          "referenced_widgets": [
+            "2bfdb702431c4cc5b72033a8fc2f0897",
+            "3426e159a85e4ae2b24f2c8d9cfa5898",
+            "64a105775b05450f9b6f87cf3ae4b7f2",
+            "c44bc2e34a994ba2b009660fb936fb2e",
+            "4feb1dc0fe3e4841af1dbf8ae98e4589",
+            "da6a08bc2daf4b79a1f5d707b8ef18a1",
+            "92f6e984ecc040cb84ad69cb21e416ca",
+            "4f8a84fcddc348d2af9dd3913c48a1e3",
+            "e05d90a8182942948e67f7af630bd289",
+            "324de8536cfd4231a5c9c6dd2b94a362",
+            "ad754693f0504438a01d9a61536ce0c5"
+          ]
+        },
+        "id": "Y7PVTxs0xdd-",
+        "outputId": "db8d8ab7-a6b0-4817-e785-d92b3bcc5f26"
+      },
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "  0%|          | 0/1156 [00:00<?, ?it/s]"
+            ],
+            "application/vnd.jupyter.widget-view+json": {
+              "version_major": 2,
+              "version_minor": 0,
+              "model_id": "2bfdb702431c4cc5b72033a8fc2f0897"
+            }
+          },
+          "metadata": {}
+        }
+      ],
+      "source": [
+        "vacs = []\n",
+        "for vac_id in tqdm(all_vacancy_ids):\n",
+        "    url = f'https://api.hh.ru/vacancies/{vac_id}'\n",
+        "    res = requests.get(url)\n",
+        "    vacs.append(res.json())"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 19,
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "8734ptv6xdd_"
+      },
+      "outputs": [],
+      "source": [
+        "res = requests.get(url)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 20,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "dict_keys(['id', 'premium', 'billing_type', 'relations', 'name', 'insider_interview', 'response_letter_required', 'area', 'salary', 'type', 'address', 'allow_messages', 'experience', 'schedule', 'employment', 'department', 'contacts', 'description', 'branded_description', 'vacancy_constructor_template', 'key_skills', 'accept_handicapped', 'accept_kids', 'archived', 'response_url', 'specializations', 'professional_roles', 'code', 'hidden', 'quick_responses_allowed', 'driver_license_types', 'accept_incomplete_resumes', 'employer', 'published_at', 'created_at', 'initial_created_at', 'negotiations_url', 'suitable_resumes_url', 'apply_alternate_url', 'has_test', 'test', 'alternate_url', 'immediate_redirect_url', 'working_days', 'working_time_intervals', 'working_time_modes', 'accept_temporary', 'languages'])"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 20
+        }
+      ],
+      "source": [
+        "res.json().keys()"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Hi-IZ35vxdd_",
+        "outputId": "5124bb4e-53ec-4a07-88e6-01d0591e7f90"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 21,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "[{'name': 'Проведение презентаций'},\n",
+              " {'name': 'Поиск и привлечение клиентов'},\n",
+              " {'name': 'Холодные продажи'},\n",
+              " {'name': 'Прямые продажи'}]"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 21
+        }
+      ],
+      "source": [
+        "res.json().get('key_skills')"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "E2Yzy6oOxdd_",
+        "outputId": "923ae40d-7c4d-4ebb-c12c-8098ce633aae"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 22,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "[{'name': 'SQL'}, {'name': 'Python'}, {'name': 'Git'}]"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 22
+        }
+      ],
+      "source": [
+        "[{'name':'SQL'},{'name':'Python'},{'name':'Git'}]"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Mqry2nq0xdd_",
+        "outputId": "d1a407db-67ae-45f4-cc8b-40fe5d2337eb"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 23,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "['SQL', 'Python', 'Git']"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 23
+        }
+      ],
+      "source": [
+        "[x.get('name') for x in [{'name':'SQL'},{'name':'Python'},{'name':'Git'}]]"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "oZcyjkhZxdd_",
+        "outputId": "829a34a2-1d01-450f-bdbd-e72b640615f1"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 24,
+      "outputs": [],
+      "source": [
+        "df = pd.json_normalize(vacs)"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "VHBL9S0GxdeA"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 25,
+      "outputs": [],
+      "source": [
+        "df = pd.DataFrame(vacs)"
+      ],
+      "metadata": {
+        "pycharm": {
+          "name": "#%%\n"
+        },
+        "id": "3MQdWg_ixdeA"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['created_at'] = pd.to_datetime(df['created_at'])"
+      ],
+      "metadata": {
+        "id": "faYXPHsY3bAB"
+      },
+      "execution_count": 26,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['key_skills']"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "muDDnVzHEnGK",
+        "outputId": "687bde6e-cbdc-4839-9588-a73a5eb1b831"
+      },
+      "execution_count": 28,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0                                                      []\n",
+              "1                                                      []\n",
+              "2                                                      []\n",
+              "3       [{'name': 'Git'}, {'name': 'Java'}, {'name': '...\n",
+              "4       [{'name': 'Работа в команде'}, {'name': 'Актив...\n",
+              "                              ...                        \n",
+              "1151    [{'name': 'Проведение презентаций'}, {'name': ...\n",
+              "1152    [{'name': 'Холодные продажи'}, {'name': 'Поиск...\n",
+              "1153    [{'name': 'Активные продажи'}, {'name': 'Холод...\n",
+              "1154    [{'name': 'Проведение презентаций'}, {'name': ...\n",
+              "1155    [{'name': 'Проведение презентаций'}, {'name': ...\n",
+              "Name: key_skills, Length: 1156, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 28
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "list_of_skills = df['key_skills'].apply(lambda s: [x.get('name') for x in s]).tolist()"
+      ],
+      "metadata": {
+        "id": "Di6nQ7n9BWHf"
+      },
+      "execution_count": 29,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['skills'] = list_of_skills"
+      ],
+      "metadata": {
+        "id": "9S9QQG2sF8HJ"
+      },
+      "execution_count": 30,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['created_at'] = df['created_at'].dt.strftime('%m/%d/%Y')"
+      ],
+      "metadata": {
+        "id": "FNY85UJtHawk"
+      },
+      "execution_count": 31,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['created_at']"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Aa5LgkCWHjBg",
+        "outputId": "579374a0-f32e-4cea-a6a0-531f42b99d8b"
+      },
+      "execution_count": 32,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0       08/03/2022\n",
+              "1       08/03/2022\n",
+              "2       08/01/2022\n",
+              "3       08/02/2022\n",
+              "4       08/01/2022\n",
+              "           ...    \n",
+              "1151    08/07/2022\n",
+              "1152    08/07/2022\n",
+              "1153    08/07/2022\n",
+              "1154    08/07/2022\n",
+              "1155    08/07/2022\n",
+              "Name: created_at, Length: 1156, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 32
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['created_at'] = pd.to_datetime(df['created_at'])\n",
+        "df['day_of_week'] = df['created_at'].dt.day_name()"
+      ],
+      "metadata": {
+        "id": "wfdZD1ZAImau"
+      },
+      "execution_count": 33,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from numpy.ma.core import count\n",
+        "c = count('Monday')"
+      ],
+      "metadata": {
+        "id": "1ZemLAx-PYy1"
+      },
+      "execution_count": 34,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df.info()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "KeLZESxzxjL2",
+        "outputId": "6306e678-a7aa-48ac-ee35-9fdf681ddf36"
+      },
+      "execution_count": 70,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "<class 'pandas.core.frame.DataFrame'>\n",
+            "RangeIndex: 1156 entries, 0 to 1155\n",
+            "Data columns (total 50 columns):\n",
+            " #   Column                        Non-Null Count  Dtype         \n",
+            "---  ------                        --------------  -----         \n",
+            " 0   id                            1156 non-null   object        \n",
+            " 1   premium                       1156 non-null   bool          \n",
+            " 2   billing_type                  1156 non-null   object        \n",
+            " 3   relations                     1156 non-null   object        \n",
+            " 4   name                          1156 non-null   object        \n",
+            " 5   insider_interview             0 non-null      object        \n",
+            " 6   response_letter_required      1156 non-null   bool          \n",
+            " 7   area                          1156 non-null   object        \n",
+            " 8   salary                        99 non-null     object        \n",
+            " 9   type                          1156 non-null   object        \n",
+            " 10  address                       449 non-null    object        \n",
+            " 11  allow_messages                1156 non-null   bool          \n",
+            " 12  experience                    1156 non-null   object        \n",
+            " 13  schedule                      1156 non-null   object        \n",
+            " 14  employment                    1156 non-null   object        \n",
+            " 15  department                    1091 non-null   object        \n",
+            " 16  contacts                      0 non-null      object        \n",
+            " 17  description                   1156 non-null   object        \n",
+            " 18  branded_description           925 non-null    object        \n",
+            " 19  vacancy_constructor_template  0 non-null      object        \n",
+            " 20  key_skills                    1156 non-null   object        \n",
+            " 21  accept_handicapped            1156 non-null   bool          \n",
+            " 22  accept_kids                   1156 non-null   bool          \n",
+            " 23  archived                      1156 non-null   bool          \n",
+            " 24  response_url                  13 non-null     object        \n",
+            " 25  specializations               1156 non-null   object        \n",
+            " 26  professional_roles            1156 non-null   object        \n",
+            " 27  code                          21 non-null     object        \n",
+            " 28  hidden                        1156 non-null   bool          \n",
+            " 29  quick_responses_allowed       1156 non-null   bool          \n",
+            " 30  driver_license_types          1156 non-null   object        \n",
+            " 31  accept_incomplete_resumes     1156 non-null   bool          \n",
+            " 32  employer                      1156 non-null   object        \n",
+            " 33  published_at                  1156 non-null   object        \n",
+            " 34  created_at                    1156 non-null   datetime64[ns]\n",
+            " 35  initial_created_at            1156 non-null   object        \n",
+            " 36  negotiations_url              0 non-null      object        \n",
+            " 37  suitable_resumes_url          0 non-null      object        \n",
+            " 38  apply_alternate_url           1156 non-null   object        \n",
+            " 39  has_test                      1156 non-null   bool          \n",
+            " 40  test                          0 non-null      object        \n",
+            " 41  alternate_url                 1156 non-null   object        \n",
+            " 42  working_days                  1156 non-null   object        \n",
+            " 43  working_time_intervals        1156 non-null   object        \n",
+            " 44  working_time_modes            1156 non-null   object        \n",
+            " 45  accept_temporary              1156 non-null   bool          \n",
+            " 46  languages                     1156 non-null   object        \n",
+            " 47  immediate_redirect_url        13 non-null     object        \n",
+            " 48  skills                        1156 non-null   object        \n",
+            " 49  day_of_week                   1156 non-null   object        \n",
+            "dtypes: bool(11), datetime64[ns](1), object(38)\n",
+            "memory usage: 364.8+ KB\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import matplotlib.pyplot as plt\n",
+        "from collections import Counter\n",
+        "d = df['day_of_week'].tolist()\n",
+        "a = ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')\n",
+        "b = 0\n",
+        "c = 0\n",
+        "for i in a:\n",
+        "  if d.count(i) > b:\n",
+        "    b = d.count(i)\n",
+        "    c = i\n",
+        "print(c, '-', b, 'вакансии')\n",
+        "\n",
+        "\n",
+        "# Monday"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ioMBASgEKrMx",
+        "outputId": "26cc5f03-bc35-4fb0-9749-7b3936009d49"
+      },
+      "execution_count": 35,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Monday - 257 вакансии\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "e = []\n",
+        "g = 0\n",
+        "for i in a:\n",
+        "  g = d.count(i)\n",
+        "  e.append(g)\n",
+        "  g = 0\n",
+        "plt.bar(a, e)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 283
+        },
+        "id": "sRZkZaJHmJFn",
+        "outputId": "3d87a536-8cfd-4cc1-dcfd-c677a86d3a6c"
+      },
+      "execution_count": 40,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "<BarContainer object of 7 artists>"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 40
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<Figure size 432x288 with 1 Axes>"
+            ],
+            "image/png": "iVBORw0KGgoAAAANSUhEUgAAAXcAAAD4CAYAAAAXUaZHAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAADh0RVh0U29mdHdhcmUAbWF0cGxvdGxpYiB2ZXJzaW9uMy4yLjIsIGh0dHA6Ly9tYXRwbG90bGliLm9yZy+WH4yJAAAVVElEQVR4nO3de7TdZX3n8fdHoEoFuSXNUEDjslEHtE0xC7GoxdpaxTpoxyrUkYt24nTBVKfqGmpnJE6lpR0VL22dAaTgpSpWqVnCiBhlqAhqguGuJdVQSBGCF0SxTInf+eP3nLI5OSfnnkMe36+19jq//fxu3/3bv/3Zz3725aSqkCT15RGLXYAkaf4Z7pLUIcNdkjpkuEtShwx3SerQ7otdAMCSJUtq+fLli12GJO1SNmzYcHdVLZ1o3sMi3JcvX8769esXuwxJ2qUkuXWyeQ7LSFKHDHdJ6pDhLkkdMtwlqUOGuyR1yHCXpA4Z7pLUIcNdkjpkuEtShx4W31D9SbP8tIsXu4SH2HzmCxe7BEnzzJ67JHVoynBPckiSzye5KcmNSV7b2tck2ZJkY7scM7LOHyTZlOTrSX59IW+AJGl70xmWeQB4fVVdk2RvYEOSy9q8s6rqbaMLJzkUOA44DPhZ4LNJnlhV2+azcEnS5KbsuVfVHVV1TZu+F7gZOGgHqxwLfKSq7q+qbwKbgCPmo1hJ0vTMaMw9yXLgF4EvtaZTk1yX5Lwk+7W2g4DbRla7nQmeDJKsTrI+yfqtW7fOuHBJ0uSmHe5J9gI+Dryuqr4PvBd4ArASuAN4+0x2XFVnV9Wqqlq1dOmEvzUvSZqlaYV7kj0Ygv1DVfUJgKq6s6q2VdWPgXN4cOhlC3DIyOoHtzZJ0k4ynU/LBHgfcHNVvWOk/cCRxV4C3NCm1wLHJXlkkscDK4Avz1/JkqSpTOfTMkcBrwSuT7Kxtb0JOD7JSqCAzcBrAKrqxiQXAjcxfNLmFD8pI0k715ThXlVfADLBrEt2sM4ZwBlzqEuSNAd+Q1WSOmS4S1KHDHdJ6pDhLkkdMtwlqUOGuyR1yHCXpA4Z7pLUIcNdkjpkuEtShwx3SeqQ4S5JHTLcJalDhrskdchwl6QOGe6S1CHDXZI6ZLhLUocMd0nq0HT+Qba0S1p+2sWLXcJDbD7zhYtdgn6C2HOXpA7Zc5c0a746eviy5y5JHTLcJalDhrskdchwl6QOGe6S1CE/LaNp8VMRC89jrPlkz12SOmS4S1KHDHdJ6tCU4Z7kkCSfT3JTkhuTvLa175/ksiS3tL/7tfYkeXeSTUmuS3L4Qt8ISdJDTafn/gDw+qo6FDgSOCXJocBpwLqqWgGsa9cBXgCsaJfVwHvnvWpJ0g5NGe5VdUdVXdOm7wVuBg4CjgUuaItdALy4TR8LvL8GVwP7Jjlw3iuXJE1qRmPuSZYDvwh8CVhWVXe0Wd8ClrXpg4DbRla7vbVJknaSaYd7kr2AjwOvq6rvj86rqgJqJjtOsjrJ+iTrt27dOpNVJUlTmFa4J9mDIdg/VFWfaM13jg23tL93tfYtwCEjqx/c2h6iqs6uqlVVtWrp0qWzrV+SNIHpfFomwPuAm6vqHSOz1gIntukTgU+OtJ/QPjVzJHDPyPCNJGknmM7PDxwFvBK4PsnG1vYm4EzgwiSvBm4FXtbmXQIcA2wC7gNOnteKJUlTmjLcq+oLQCaZ/dwJli/glDnWJUmaA7+hKkkdMtwlqUOGuyR1yHCXpA4Z7pLUIcNdkjpkuEtShwx3SeqQ4S5JHTLcJalDhrskdchwl6QOGe6S1CHDXZI6ZLhLUocMd0nqkOEuSR0y3CWpQ4a7JHXIcJekDhnuktQhw12SOmS4S1KHDHdJ6pDhLkkdMtwlqUOGuyR1yHCXpA4Z7pLUIcNdkjpkuEtShwx3SerQlOGe5LwkdyW5YaRtTZItSTa2yzEj8/4gyaYkX0/y6wtVuCRpctPpuZ8PPH+C9rOqamW7XAKQ5FDgOOCwts5fJtltvoqVJE3PlOFeVVcA35nm9o4FPlJV91fVN4FNwBFzqE+SNAtzGXM/Ncl1bdhmv9Z2EHDbyDK3t7btJFmdZH2S9Vu3bp1DGZKk8WYb7u8FngCsBO4A3j7TDVTV2VW1qqpWLV26dJZlSJImMqtwr6o7q2pbVf0YOIcHh162AIeMLHpwa5Mk7USzCvckB45cfQkw9kmatcBxSR6Z5PHACuDLcytRkjRTu0+1QJIPA0cDS5LcDpwOHJ1kJVDAZuA1AFV1Y5ILgZuAB4BTqmrbwpQuSZrMlOFeVcdP0Py+HSx/BnDGXIqSJM2N31CVpA4Z7pLUIcNdkjpkuEtShwx3SeqQ4S5JHTLcJalDhrskdchwl6QOGe6S1CHDXZI6ZLhLUocMd0nqkOEuSR0y3CWpQ4a7JHXIcJekDhnuktQhw12SOmS4S1KHDHdJ6pDhLkkdMtwlqUOGuyR1yHCXpA4Z7pLUIcNdkjpkuEtShwx3SeqQ4S5JHTLcJalDU4Z7kvOS3JXkhpG2/ZNcluSW9ne/1p4k706yKcl1SQ5fyOIlSRObTs/9fOD549pOA9ZV1QpgXbsO8AJgRbusBt47P2VKkmZiynCvqiuA74xrPha4oE1fALx4pP39Nbga2DfJgfNVrCRpemY75r6squ5o098ClrXpg4DbRpa7vbVtJ8nqJOuTrN+6dessy5AkTWTOb6hWVQE1i/XOrqpVVbVq6dKlcy1DkjRituF+59hwS/t7V2vfAhwystzBrU2StBPNNtzXAie26ROBT460n9A+NXMkcM/I8I0kaSfZfaoFknwYOBpYkuR24HTgTODCJK8GbgVe1ha/BDgG2ATcB5y8ADVLkqYwZbhX1fGTzHruBMsWcMpci5IkzY3fUJWkDhnuktQhw12SOmS4S1KHDHdJ6pDhLkkdMtwlqUOGuyR1yHCXpA4Z7pLUIcNdkjpkuEtShwx3SeqQ4S5JHTLcJalDhrskdchwl6QOGe6S1CHDXZI6ZLhLUocMd0nqkOEuSR0y3CWpQ4a7JHXIcJekDhnuktQhw12SOmS4S1KHDHdJ6pDhLkkdMtwlqUO7z2XlJJuBe4FtwANVtSrJ/sBHgeXAZuBlVfXduZUpSZqJ+ei5P6eqVlbVqnb9NGBdVa0A1rXrkqSdaCGGZY4FLmjTFwAvXoB9SJJ2YK7hXsBnkmxIsrq1LauqO9r0t4Blc9yHJGmG5jTmDjyzqrYk+RngsiRfG51ZVZWkJlqxPRmsBnjsYx87xzIkSaPm1HOvqi3t713ARcARwJ1JDgRof++aZN2zq2pVVa1aunTpXMqQJI0z63BP8ugke49NA88DbgDWAie2xU4EPjnXIiVJMzOXYZllwEVJxrbz11X16SRfAS5M8mrgVuBlcy9TkjQTsw73qvoG8AsTtH8beO5cipIkzY3fUJWkDhnuktQhw12SOmS4S1KHDHdJ6pDhLkkdMtwlqUOGuyR1yHCXpA4Z7pLUIcNdkjo0199zX3TLT7t4sUt4iM1nvnCxS5Ake+6S1CPDXZI6ZLhLUocMd0nqkOEuSR0y3CWpQ4a7JHXIcJekDhnuktQhw12SOmS4S1KHDHdJ6tAu/8NhkjQTPyk/NmjPXZI6ZLhLUocMd0nqkOEuSR0y3CWpQ4a7JHXIcJekDi1YuCd5fpKvJ9mU5LSF2o8kaXsLEu5JdgP+AngBcChwfJJDF2JfkqTtLVTP/QhgU1V9o6r+H/AR4NgF2pckaZxU1fxvNHkp8Pyq+p12/ZXA06vq1JFlVgOr29UnAV+f90JmZglw9yLXMFPWvHPsajXvavWCNc/W46pq6UQzFu23ZarqbODsxdr/eEnWV9Wqxa5jJqx559jVat7V6gVrXggLNSyzBThk5PrBrU2StBMsVLh/BViR5PFJfgo4Dli7QPuSJI2zIMMyVfVAklOBS4HdgPOq6saF2Nc8etgMEc2ANe8cu1rNu1q9YM3zbkHeUJUkLS6/oSpJHTLcJalDXYR7kj9McmOS65JsTPL0edjmmiRvmI/6xm23knxw5PruSbYm+dQ8bX/e6k5yQDueG5N8K8mWkes/NR/7aPs5erq3P8lZSV43cv3SJOeOXH97kt+fxnaWJ7lhdhVPT5If7GDeZMf2e0luWsi62v5PSvLnC7DdbSO3a2OS5RMsc0mSfSdoX5DHXNv2tDOiHZufnYd9bk6yZK7bma1d/n+oJnkG8BvA4VV1fzuY8xY8C+CHwFOS7FlVPwJ+jYfpx0Sr6tvAShgeeMAPqupti1oUXAm8DHhnkkcwfJHkMSPzfwn4L4tR2ExMdmxbGM76iT7J7lX1wHzUOEs/qqqVE81IEob3+Y7ZmQXNIiNOAm4A/mkG+1js476dHnruBwJ3V9X9AFV1d1X90+izZpJVSS5v02uSnJfk8iTfSPJ7Yxtqz+5/n+QLDN+aHWv/j0m+kuTaJB9P8tNJ9k7yzSR7tGUeM3p9CpcAY/8V93jgwyP72j/J37YextVJfv5hVDdJzs/wDeSx6z8YmX5j2991Sd7S2h6d5OJWww1JXt7an5/ka0muAX5zZBtHJLkqyVeTfDHJk1r7FUlWAl8EntFu60sYHoT3JtkvySOBfwtUkv+bZEPr2R/YtvG0Vse1wCkj+zwpySeSfDrJLUn+bGTe81o91yT5WJK9WvuZSW5qt/Vtre3xbdnrk7x1ZBt7JVnXtnF9kmNb+//IQ1+FnAGcDOyW5JwMPc3PJNmzzb88yao2vSTJ5pH61yb5HLAuyYHteG1sx/xZbbmT23nyZeCokf2+KMmX2jH/bJJlSR7RjsXStswjMvwI4ITfhtzB+bI8ww8Ivr/dV4fkoY/NnXHuTpYRb277uCHJ2Rm8FFgFfKgdvz2z4yz5QJIrgQ9keDX2mXa/nQtk5Pb8bTsfb8zw7XySvCrJO8fd5rNmcnx3qKp26QuwF7AR+HvgL4Ffbu2bgSVtehVweZtewxAQj2To9X0b2AN4GnA98NMMPcFNwBvaOgeM7O+twH9u038FvLhNrwbePo16fwD8PPA3wKNa7UcDn2rz3wOc3qZ/Bdj4MKl7DfAG4HzgpaO3p/19HsNHw8LQafgU8Gzg3wPnjCy/T7vdtwEr2vIXjtz+xwC7t+lfBT7epk8E3tmmbwOuA14D/Cfgj4BjGALrqnaclrZlX87wUVzaOs9u0/8TuKFNnwR8Y6S2Wxm+hLcEuAJ4dFvuvwJvBg5g+LmMsU+b7dv+rgVOaNOnjByb3YHHtOkl7T4KsBy4ph3bNwL/wNCbfwBY2Za/EPgPbfpyYNXIdjaP1H87sH+7/nrgD9v0bsDeDAH3j8BShl7rlcCft2X2G7ktv0M7H4DTgdeN3L8fn8Z5so3hnN4IXNRu44+BI0eW2dzq31nn7mQZsf/IMh8AXjT+OE8jSzYAe7br7wbe3KZfCNTIemP3zZ4MT3IHtLr+Adijzfsi8NT5ysZdvudeVT9gOElWA1uBjyY5aYrVLq6q+6vqbuAuYBnwLOCiqrqvqr7PQ7909ZQkf5fkeuAVwGGt/VyGnhbt719Ns+brGE764xl68aOeyXCiUVWfAw5IMjbssKh1T+F57fJVhsB6MkN4Xw/8WpI/TfKsqrqnzftmVd1Sw1n9wZHt7AN8LMN4+FkjNX8M+I3WS/s+sJ5hCOaqdvmldtkCPAW4LMlG4L8BB2cY4923qq5o2/vAuPrXVdU9VfXPwE3A44AjGX7V9Mq2rRNb+z3APwPvS/KbwH1tG0fx4Kuw0e0H+OMk1wGfBQ4CllXVZoYn6X8DPLEdu++1Y7OxrbuB4VyZymVV9Z02/RXg5AzDPU+tqnuBpzOE0tYafszvoyPrHgxc2s6TN/LgMT8POKFNv4rpnSc/qqqV7fKS1nZrVV09wbI75dzdQUY8p71iuZ6hI3XY5FuZ1Noahldh6Mx8sO3zYuC7I8v9XoZXjFczdBxWtLo+x3BeP5kh5K+fRQ0T2uXH3AGqahvDs+3l7Y46kaH3M/bk9ahxq9w/Mr2NqY/D+Qy9hWvbSXF02++V7WXn0cBuVTWTN+jWAm9r2zpgmus8HOr+1+OaYcx7bOwywJ9U1f8ev0KSwxl61m9Nso4df1v5j4DPV9VLMow/X95qvi/JZQy/LroM+BeGXu4NDD351zOE/uXAQVX1jHE1bPcG3jgTHdswhObxE9ymI4DnAi8FTmUIBxh6a+O9gqHH/LSq+pc2nDJ2Tp7L8B7Bo4A3TVLLnm16R+f0D8cmquqKJM9m6D2en+QdDMdmMu8B3lFVa9s5saZt57Ykdyb5FYZfen3FDraxIz+cepHtnM88nrsTZMRrGF5Br2q3cw3bH9Mx0zruk2m1/irwjHYeX85D7/83AV9jfjpZ/2qX77kneVKSFSNNKxleVm9meLaGYWhgKlcAL25jbHsDLxqZtzdwR+s1jj/B3w/8NTO/Y84D3jLBM/Xfje2jnRR3t17Nw6XuzTx4XP8dw9AQDN9GflUeHJM+KMnPZPjUwX1V9UGGoZDDGU7k5Ume0NYdDc99ePAN5pPG7ftchpe+GxjeiP5OVW1rPdZ9gWcw9JyXZngTjSR7JDmsqr4HfC/JM9u2phNUVwNHJfm5tq1HJ3liu437VNUlDMH8C235Kxl+amP89vcB7mrB/hyG3v+Yi4CfY+jNXTpFPZt58Ni/dLKFkjwOuLOqzmE4ZocDXwJ+uY0L7wH81rj6xo75ieM2dy5Db/RjLSDn0045dyfJiLFfob273Z+jx/Petv8xm5lellwB/Hbb5wsYhrtgOL7fbcH+ZIZXhABU1ZcY7vvfZuS9t/mwy4c7w7jVBWlvbjG8jF4DvAV4V5L1DL2fHaqqaxheql4L/B+Gl7Zj/jvDg+NKhmAa9SGGO3FGd0xV3V5V755g1hrgae22nMn2D7ZFrRs4hyEkrmUI0x+2Oj7D8IC7qvWM/obhAfJU4MttWON04K1t6GM1cHGGN1TvGtn+nwF/kuSrjHtlUlUbGHqg72IYsx19qX89cE9V3cXwQP3TVuNGhuEaGF7G/0WrJUyhqrYyPMF8uN0fVzEMKe0NfKq1fQEY++jla4FT2u0/aGRTHwJWtfYTGLkv2hDJZuDaaYTn24DfbcdmRx+xOxq4ti33cuBdVXUHw7l1FcP5cPPI8msYhsI2sP1P2K5leIzNa68Sduq5O1lGnMPwyu/Scfs+H/hfaW+oMv0seQvw7CQ3MnxI4B9b+6eB3ZPczPCYHj9EdSFwZVV9l3nkzw/MUYZ314+tqlcudi0zsSvW3V4FXA48uap+vMjlzIs2tHUN8FtVdcti1zNehk/nnFVVz1rsWsbsiufujmT4jsdZVbVuPrfbxZj7YknyHoZ/JbhTP7c7V7ti3UlOAM4Afr+jYD+U4VNFFz1Mg/004HeZ/Vj7vNsVz93JtPeBvszwqm1egx3suUtSl3oYc5ckjWO4S1KHDHdJ6pDhLkkdMtwlqUP/H4ftQGtFlGuKAAAAAElFTkSuQmCC\n"
+          },
+          "metadata": {
+            "needs_background": "light"
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.8.5"
+    },
+    "colab": {
+      "name": "HH-api-hometask.ipynb",
+      "provenance": [],
+      "collapsed_sections": [],
+      "include_colab_link": true
+    },
+    "widgets": {
+      "application/vnd.jupyter.widget-state+json": {
+        "f8bd09dd54324eabbd1998d473de8b45": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "HBoxModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "HBoxModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "HBoxView",
+            "box_style": "",
+            "children": [
+              "IPY_MODEL_e16fccf738a544e587c79a59089d9382",
+              "IPY_MODEL_009e129e0de9414abb64737582cad721",
+              "IPY_MODEL_344d1463d5714202954295ab97e18e65"
+            ],
+            "layout": "IPY_MODEL_b3d6eca338c24d1d8993752a693b1691"
+          }
+        },
+        "e16fccf738a544e587c79a59089d9382": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "HTMLModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "HTMLModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "HTMLView",
+            "description": "",
+            "description_tooltip": null,
+            "layout": "IPY_MODEL_ce482a3642e34480b7fc5079493f68e8",
+            "placeholder": "​",
+            "style": "IPY_MODEL_af3ef48e3ae9439ea82cc0ed245a8559",
+            "value": " 20%"
+          }
+        },
+        "009e129e0de9414abb64737582cad721": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "FloatProgressModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "FloatProgressModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "ProgressView",
+            "bar_style": "danger",
+            "description": "",
+            "description_tooltip": null,
+            "layout": "IPY_MODEL_27f18ab521c345f89f99c9853dcde721",
+            "max": 100,
+            "min": 0,
+            "orientation": "horizontal",
+            "style": "IPY_MODEL_db14d38926b249deba022317527393fc",
+            "value": 20
+          }
+        },
+        "344d1463d5714202954295ab97e18e65": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "HTMLModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "HTMLModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "HTMLView",
+            "description": "",
+            "description_tooltip": null,
+            "layout": "IPY_MODEL_5f94b627e3c54a8ebd09de0c219c3f2b",
+            "placeholder": "​",
+            "style": "IPY_MODEL_560e3c5513df43d08d5408267334a5c8",
+            "value": " 20/100 [00:13&lt;00:34,  2.32it/s]"
+          }
+        },
+        "b3d6eca338c24d1d8993752a693b1691": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "ce482a3642e34480b7fc5079493f68e8": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "af3ef48e3ae9439ea82cc0ed245a8559": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "DescriptionStyleModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "DescriptionStyleModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "StyleView",
+            "description_width": ""
+          }
+        },
+        "27f18ab521c345f89f99c9853dcde721": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "db14d38926b249deba022317527393fc": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "ProgressStyleModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "ProgressStyleModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "StyleView",
+            "bar_color": null,
+            "description_width": ""
+          }
+        },
+        "5f94b627e3c54a8ebd09de0c219c3f2b": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "560e3c5513df43d08d5408267334a5c8": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "DescriptionStyleModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "DescriptionStyleModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "StyleView",
+            "description_width": ""
+          }
+        },
+        "2bfdb702431c4cc5b72033a8fc2f0897": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "HBoxModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "HBoxModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "HBoxView",
+            "box_style": "",
+            "children": [
+              "IPY_MODEL_3426e159a85e4ae2b24f2c8d9cfa5898",
+              "IPY_MODEL_64a105775b05450f9b6f87cf3ae4b7f2",
+              "IPY_MODEL_c44bc2e34a994ba2b009660fb936fb2e"
+            ],
+            "layout": "IPY_MODEL_4feb1dc0fe3e4841af1dbf8ae98e4589"
+          }
+        },
+        "3426e159a85e4ae2b24f2c8d9cfa5898": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "HTMLModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "HTMLModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "HTMLView",
+            "description": "",
+            "description_tooltip": null,
+            "layout": "IPY_MODEL_da6a08bc2daf4b79a1f5d707b8ef18a1",
+            "placeholder": "​",
+            "style": "IPY_MODEL_92f6e984ecc040cb84ad69cb21e416ca",
+            "value": "100%"
+          }
+        },
+        "64a105775b05450f9b6f87cf3ae4b7f2": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "FloatProgressModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "FloatProgressModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "ProgressView",
+            "bar_style": "success",
+            "description": "",
+            "description_tooltip": null,
+            "layout": "IPY_MODEL_4f8a84fcddc348d2af9dd3913c48a1e3",
+            "max": 1156,
+            "min": 0,
+            "orientation": "horizontal",
+            "style": "IPY_MODEL_e05d90a8182942948e67f7af630bd289",
+            "value": 1156
+          }
+        },
+        "c44bc2e34a994ba2b009660fb936fb2e": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "HTMLModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_dom_classes": [],
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "HTMLModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/controls",
+            "_view_module_version": "1.5.0",
+            "_view_name": "HTMLView",
+            "description": "",
+            "description_tooltip": null,
+            "layout": "IPY_MODEL_324de8536cfd4231a5c9c6dd2b94a362",
+            "placeholder": "​",
+            "style": "IPY_MODEL_ad754693f0504438a01d9a61536ce0c5",
+            "value": " 1156/1156 [10:54&lt;00:00,  1.69it/s]"
+          }
+        },
+        "4feb1dc0fe3e4841af1dbf8ae98e4589": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "da6a08bc2daf4b79a1f5d707b8ef18a1": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "92f6e984ecc040cb84ad69cb21e416ca": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "DescriptionStyleModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "DescriptionStyleModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "StyleView",
+            "description_width": ""
+          }
+        },
+        "4f8a84fcddc348d2af9dd3913c48a1e3": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "e05d90a8182942948e67f7af630bd289": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "ProgressStyleModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "ProgressStyleModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "StyleView",
+            "bar_color": null,
+            "description_width": ""
+          }
+        },
+        "324de8536cfd4231a5c9c6dd2b94a362": {
+          "model_module": "@jupyter-widgets/base",
+          "model_name": "LayoutModel",
+          "model_module_version": "1.2.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/base",
+            "_model_module_version": "1.2.0",
+            "_model_name": "LayoutModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "LayoutView",
+            "align_content": null,
+            "align_items": null,
+            "align_self": null,
+            "border": null,
+            "bottom": null,
+            "display": null,
+            "flex": null,
+            "flex_flow": null,
+            "grid_area": null,
+            "grid_auto_columns": null,
+            "grid_auto_flow": null,
+            "grid_auto_rows": null,
+            "grid_column": null,
+            "grid_gap": null,
+            "grid_row": null,
+            "grid_template_areas": null,
+            "grid_template_columns": null,
+            "grid_template_rows": null,
+            "height": null,
+            "justify_content": null,
+            "justify_items": null,
+            "left": null,
+            "margin": null,
+            "max_height": null,
+            "max_width": null,
+            "min_height": null,
+            "min_width": null,
+            "object_fit": null,
+            "object_position": null,
+            "order": null,
+            "overflow": null,
+            "overflow_x": null,
+            "overflow_y": null,
+            "padding": null,
+            "right": null,
+            "top": null,
+            "visibility": null,
+            "width": null
+          }
+        },
+        "ad754693f0504438a01d9a61536ce0c5": {
+          "model_module": "@jupyter-widgets/controls",
+          "model_name": "DescriptionStyleModel",
+          "model_module_version": "1.5.0",
+          "state": {
+            "_model_module": "@jupyter-widgets/controls",
+            "_model_module_version": "1.5.0",
+            "_model_name": "DescriptionStyleModel",
+            "_view_count": null,
+            "_view_module": "@jupyter-widgets/base",
+            "_view_module_version": "1.2.0",
+            "_view_name": "StyleView",
+            "description_width": ""
+          }
+        }
+      }
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
